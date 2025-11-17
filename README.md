@@ -1,4 +1,4 @@
-# OpenShift Operator Catalog Tool ✅ Production Ready
+# OpenShift Operator Catalog Tool
 
 A comprehensive command-line tool for exploring OpenShift operator catalogs with professional formatting and advanced features. Fully tested and production-ready.
 
