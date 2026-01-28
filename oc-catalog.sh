@@ -340,7 +340,7 @@ versions() {
 
 hub() {
     # Set packages array with hub packages and call versions function
-    packages=("odf-operator" "openshift-gitops-operator" "topology-aware-lifecycle-manager" "local-storage-operator" "cluster-logging" "amq-streams" "amq-streams-console" "advanced-cluster-management")
+    packages=("odf-operator" "openshift-gitops-operator" "topology-aware-lifecycle-manager" "local-storage-operator" "cluster-logging" "amq-streams" "amq-streams-console" "advanced-cluster-management" "multicluster-engine")
     versions
 }
 
