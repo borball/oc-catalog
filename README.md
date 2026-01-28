@@ -26,8 +26,8 @@ A comprehensive command-line tool for exploring OpenShift operator catalogs with
 
 ### Options
 
-- **-v** `<version>` - OpenShift version or SHA256 digest (default: 4.18)
-  - Version tag: `4.18`, `4.17`, etc.
+- **-v** `<version>` - OpenShift version or SHA256 digest (default: 4.20)
+  - Version tag: `4.20`, `4.19`, etc.
   - SHA256 digest: `sha256:6462dd0a33055240e169044356899aaa...`
 - **-c** `<catalog>` - Catalog name (default: redhat-operator)
   - Valid options: `redhat-operator`, `certified-operator`, `community-operator`, `redhat-marketplace`
@@ -76,8 +76,8 @@ The tool supports three ways to specify catalog sources:
 The tool supports both version tags and SHA256 digests for precise catalog targeting:
 
 ### Version Tags (Mutable)
-- **Format**: `4.18`, `4.17`, etc.
-- **Image Reference**: `registry.redhat.io/redhat/redhat-operator-index:v4.18`
+- **Format**: `4.20`, `4.19`, etc.
+- **Image Reference**: `registry.redhat.io/redhat/redhat-operator-index:v4.20`
 - **Use Case**: Latest updates for a specific OpenShift version
 
 ### SHA256 Digests (Immutable)
@@ -144,7 +144,7 @@ Pre-configured collection for CloudRAN and Telco workloads:
 Show operator packages and their default channels:
 
 ```bash
-# List all packages (using defaults: 4.18, redhat-operator)
+# List all packages (using defaults: 4.20, redhat-operator)
 ./oc-catalog.sh packages
 
 # List specific packages
@@ -165,7 +165,7 @@ Show operator packages and their default channels:
 
 **Output:**
 ```
-📦 OpenShift Operator Packages (redhat-operator-4.18)
+📦 OpenShift Operator Packages (redhat-operator-4.20)
 ==================================================
 ┌─────────────────────────────────────────────────────────┬────────────────────────────────┐
 │ Package Name                                            │ Default Channel                │
@@ -204,7 +204,7 @@ Show all available channels for operators:
 
 **Output:**
 ```
-📺 OpenShift Operator Channels (redhat-operator-4.18)
+📺 OpenShift Operator Channels (redhat-operator-4.20)
 ==================================================
 ┌─────────────────────────────────────────────────────────┬───────────────────────────────────┐
 │ Package Name                                            │ Channel                           │
@@ -247,16 +247,16 @@ Show all available versions/bundles for operators:
 
 **Output:**
 ```
-🔢 OpenShift Operator Versions (redhat-operator-4.18)
+🔢 OpenShift Operator Versions (redhat-operator-4.20)
 ==================================================
 ┌─────────────────────────────────────────────────────────┬───────────────────────────────────────────────┐
 │ Package Name                                            │ Version/Bundle                                │
 ├─────────────────────────────────────────────────────────┼───────────────────────────────────────────────┤
-│ ptp-operator                                            │ ptp-operator.v4.18.0-202501230001             │
-│ ptp-operator                                            │ ptp-operator.v4.18.0-202502250302             │
-│ ptp-operator                                            │ ptp-operator.v4.18.0-202503121135             │
-│ ptp-operator                                            │ ptp-operator.v4.18.0-202503211332             │
-│ ptp-operator                                            │ ptp-operator.v4.18.0-202504021503             │
+│ ptp-operator                                            │ ptp-operator.v4.20.0-202501230001             │
+│ ptp-operator                                            │ ptp-operator.v4.20.0-202502250302             │
+│ ptp-operator                                            │ ptp-operator.v4.20.0-202503121135             │
+│ ptp-operator                                            │ ptp-operator.v4.20.0-202503211332             │
+│ ptp-operator                                            │ ptp-operator.v4.20.0-202504021503             │
 └─────────────────────────────────────────────────────────┴───────────────────────────────────────────────┘
 📊 Summary: 5 versions found
 ```
@@ -291,7 +291,7 @@ Show all available versions/bundles for operators:
 
 **Output:**
 ```
-🔢 OpenShift Operator Versions (certified-operator-4.18)
+🔢 OpenShift Operator Versions (certified-operator-4.20)
 ==================================================
 ┌─────────────────────────────────────────────────────────┬───────────────────────────────────────────────┐
 │ Package Name                                            │ Version/Bundle                                │
@@ -323,15 +323,15 @@ Show available versions for common hub operators:
 
 **Output:**
 ```
-🔢 OpenShift Operator Versions (redhat-operator-4.18)
+🔢 OpenShift Operator Versions (redhat-operator-4.20)
 ==================================================
 ┌─────────────────────────────────────────────────────────┬───────────────────────────────────────────────┐
 │ Package Name                                            │ Version/Bundle                                │
 ├─────────────────────────────────────────────────────────┼───────────────────────────────────────────────┤
-│ odf-operator                                            │ odf-operator.v4.18.0-202501230001             │
+│ odf-operator                                            │ odf-operator.v4.20.0-202501230001             │
 │ openshift-gitops-operator                               │ openshift-gitops-operator.v1.15.1             │
-│ topology-aware-lifecycle-manager                        │ topology-aware-lifecycle-manager.v4.18.0      │
-│ local-storage-operator                                  │ local-storage-operator.v4.18.0-202501230001   │
+│ topology-aware-lifecycle-manager                        │ topology-aware-lifecycle-manager.v4.20.0      │
+│ local-storage-operator                                  │ local-storage-operator.v4.20.0-202501230001   │
 │ cluster-logging                                         │ cluster-logging.v6.3.0-202501230001           │
 │ amq-streams                                             │ amq-streams.v2.9.0-0                          │
 │ amq-streams-console                                     │ amq-streams-console.v0.1.0                    │
@@ -366,16 +366,16 @@ Show available versions for common CloudRAN operators:
 
 **Output:**
 ```
-🔢 OpenShift Operator Versions (redhat-operator-4.18)
+🔢 OpenShift Operator Versions (redhat-operator-4.20)
 ==================================================
 ┌─────────────────────────────────────────────────────────┬───────────────────────────────────────────────┐
 │ Package Name                                            │ Version/Bundle                                │
 ├─────────────────────────────────────────────────────────┼───────────────────────────────────────────────┤
-│ ptp-operator                                            │ ptp-operator.v4.18.0-202501230001             │
-│ sriov-network-operator                                  │ sriov-network-operator.v4.18.0-202501230001   │
-│ local-storage-operator                                  │ local-storage-operator.v4.18.0-202501230001   │
+│ ptp-operator                                            │ ptp-operator.v4.20.0-202501230001             │
+│ sriov-network-operator                                  │ sriov-network-operator.v4.20.0-202501230001   │
+│ local-storage-operator                                  │ local-storage-operator.v4.20.0-202501230001   │
 │ cluster-logging                                         │ cluster-logging.v6.3.0-202501230001           │
-│ lifecycle-agent                                         │ lifecycle-agent.v4.18.0-202501230001          │
+│ lifecycle-agent                                         │ lifecycle-agent.v4.20.0-202501230001          │
 │ redhat-oadp-operator                                    │ redhat-oadp-operator.v1.5.0                   │
 └─────────────────────────────────────────────────────────┴───────────────────────────────────────────────┘
 📊 Summary: 6 versions found
@@ -414,7 +414,7 @@ Show available versions for common CloudRAN operators:
 # Get help
 ./oc-catalog.sh -h
 
-# List all packages (using defaults: 4.18, redhat-operator)
+# List all packages (using defaults: 4.20, redhat-operator)
 ./oc-catalog.sh packages
 
 # Check specific operators
@@ -480,8 +480,8 @@ Running the script with `-h` or no arguments shows the complete help message:
 Usage: ./oc-catalog.sh [options] <command> [packages...]
 
 Options:
-  -v <version>   OpenShift version or SHA256 digest (default: 4.18)
-                   Examples: 4.18, sha256:78c4590eaa7a8c75a08ece...
+  -v <version>   OpenShift version or SHA256 digest (default: 4.20)
+                   Examples: 4.20, sha256:78c4590eaa7a8c75a08ece...
   -c <catalog>   Catalog name (default: redhat-operator)
   -i <image>     Custom catalog index image (overrides -v and -c)
                    Example: registry.example.com/my-catalog:latest
@@ -499,12 +499,12 @@ Package Arguments:
   • If no packages provided, all packages will be listed
 
 Examples:
-  ./oc-catalog.sh packages                                  # Use defaults (4.18, redhat-operator)
+  ./oc-catalog.sh packages                                  # Use defaults (4.20, redhat-operator)
   ./oc-catalog.sh -v 4.17 packages                         # Different version
   ./oc-catalog.sh -v sha256:78c4590eaa7a... packages       # Use SHA256 digest
   ./oc-catalog.sh -c certified-operator packages           # Different catalog
   ./oc-catalog.sh -i registry.example.com/my-catalog:v1.0 packages # Custom index
-  ./oc-catalog.sh -v 4.18 -c redhat-operator packages ptp-operator cluster-logging
+  ./oc-catalog.sh -v 4.20 -c redhat-operator packages ptp-operator cluster-logging
   ./oc-catalog.sh -c certified-operator packages sriov-fec # Certified operator
   ./oc-catalog.sh hub                                       # List all hub operator versions
   ./oc-catalog.sh cloudran                                  # List all cloudran operator versions

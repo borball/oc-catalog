@@ -3,7 +3,7 @@
 # use opm to implement it
 
 # Default values
-version="4.18"
+version="4.20"
 catalog="redhat-operator"
 index_image=""
 show_help=0
@@ -355,8 +355,8 @@ if [ -z "$cmd" ] || [ $show_help -eq 1 ]; then
     echo -e "${BOLD}Usage:${NC} $0 [options] <command> [packages...]"
     echo
     echo -e "${BOLD}Options:${NC}"
-    echo -e "  ${GREEN}-v${NC} <version>   OpenShift version or SHA256 digest (default: 4.18)"
-    echo -e "                   Examples: 4.18, sha256:78c4590eaa7a8c75a08ece..."
+    echo -e "  ${GREEN}-v${NC} <version>   OpenShift version or SHA256 digest (default: 4.20)"
+    echo -e "                   Examples: 4.20, sha256:78c4590eaa7a8c75a08ece..."
     echo -e "  ${GREEN}-c${NC} <catalog>   Catalog name (default: redhat-operator)"
     echo -e "  ${GREEN}-i${NC} <image>     Custom catalog index image (overrides -v and -c)"
     echo -e "                   Example: registry.example.com/my-catalog:latest"
@@ -378,13 +378,13 @@ if [ -z "$cmd" ] || [ $show_help -eq 1 ]; then
     echo -e "  • If no packages provided, all packages will be listed"
     echo
     echo -e "${BOLD}Examples:${NC}"
-    echo -e "  ${CYAN}$0 packages${NC}                                  # Use defaults (4.18, redhat-operator)"
+    echo -e "  ${CYAN}$0 packages${NC}                                  # Use defaults (4.20, redhat-operator)"
     echo -e "  ${CYAN}$0 -v 4.17 packages${NC}                         # Different version"
     echo -e "  ${CYAN}$0 -v sha256:78c4590eaa7a... packages${NC}       # Use SHA256 digest"
     echo -e "  ${CYAN}$0 -c certified-operator packages${NC}           # Different catalog"
     echo -e "  ${CYAN}$0 -i registry.example.com/my-catalog:v1.0 packages${NC} # Custom index"
     echo -e "  ${CYAN}$0 -l 5 versions ptp-operator${NC}               # Show 5 versions for ptp-operator"
-    echo -e "  ${CYAN}$0 -v 4.18 -c redhat-operator packages ptp-operator cluster-logging${NC}"
+    echo -e "  ${CYAN}$0 -v 4.20 -c redhat-operator packages ptp-operator cluster-logging${NC}"
     echo -e "  ${CYAN}$0 -c certified-operator packages sriov-fec${NC} # Certified operator"
     echo -e "  ${CYAN}$0 hub${NC}                                       # List all hub operator versions"
     echo -e "  ${CYAN}$0 cloudran${NC}                                  # List all cloudran operator versions"
