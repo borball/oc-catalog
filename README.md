@@ -16,7 +16,6 @@ A comprehensive command-line tool for exploring OpenShift operator catalogs with
 - 🌐 **Custom index images** - Support for private/custom registries
 - ⚡ **Result limiting** - Configurable output limits for performance
 - 🛡️ **Robust error handling** - Comprehensive validation and error messages
-- 🧪 **Comprehensive testing** - Full test suite with quality assurance
 
 ## Usage
 
@@ -42,9 +41,9 @@ A comprehensive command-line tool for exploring OpenShift operator catalogs with
 
 - **packages** - List operator packages and their default channels
 - **channels** - List all available channels for packages
-- **versions** - List all available versions/bundles for packages
-- **hub** - List versions for pre-configured hub operator collection
-- **cloudran** - List versions for pre-configured cloudran operator collection
+- **versions** - List all available versions/bundles with their channel(s)
+- **hub** - List versions with channels for pre-configured hub operator collection
+- **cloudran** - List versions with channels for pre-configured cloudran operator collection
 
 ### Package Arguments
 
@@ -116,12 +115,14 @@ Pre-configured collection for ACM Hub cluster deployments:
 - `amq-streams` - Apache Kafka (AMQ Streams)
 - `amq-streams-console` - Kafka Console UI
 - `advanced-cluster-management` - Red Hat Advanced Cluster Management
+- `multicluster-engine` - MultiCluster Engine
 
 ### CloudRAN/Telco Operators (`cloudran` command)
 Pre-configured collection for CloudRAN and Telco workloads:
 - `ptp-operator` - Precision Time Protocol
 - `sriov-network-operator` - SR-IOV Network Operator
 - `local-storage-operator` - Local Storage Operator
+- `lvms-operator` - LVM Storage Operator
 - `cluster-logging` - OpenShift Logging
 - `lifecycle-agent` - Lifecycle Agent for SNO upgrades
 - `redhat-oadp-operator` - OADP Backup and Restore
@@ -167,12 +168,12 @@ Show operator packages and their default channels:
 ```
 📦 OpenShift Operator Packages (redhat-operator-4.20)
 ==================================================
-┌─────────────────────────────────────────────────────────┬────────────────────────────────┐
-│ Package Name                                            │ Default Channel                │
-├─────────────────────────────────────────────────────────┼────────────────────────────────┤
-│ ptp-operator                                            │ stable                         │
-│ cluster-logging                                         │ stable-6.3                     │
-└─────────────────────────────────────────────────────────┴────────────────────────────────┘
+┌─────────────────┬─────────────────┐
+│ Package Name    │ Default Channel │
+├─────────────────┼─────────────────┤
+│ cluster-logging │ stable-6.5      │
+│ ptp-operator    │ stable          │
+└─────────────────┴─────────────────┘
 📊 Summary: 2 packages found
 ```
 
@@ -206,14 +207,15 @@ Show all available channels for operators:
 ```
 📺 OpenShift Operator Channels (redhat-operator-4.20)
 ==================================================
-┌─────────────────────────────────────────────────────────┬───────────────────────────────────┐
-│ Package Name                                            │ Channel                           │
-├─────────────────────────────────────────────────────────┼───────────────────────────────────┤
-│ cluster-logging                                         │ stable-6.1                        │
-│ cluster-logging                                         │ stable-6.2                        │
-│ cluster-logging                                         │ stable-6.3                        │
-└─────────────────────────────────────────────────────────┴───────────────────────────────────┘
-📊 Summary: 3 channels found
+┌─────────────────┬────────────┐
+│ Package Name    │ Channel    │
+├─────────────────┼────────────┤
+│ cluster-logging │ stable-6.2 │
+│ cluster-logging │ stable-6.3 │
+│ cluster-logging │ stable-6.4 │
+│ cluster-logging │ stable-6.5 │
+└─────────────────┴────────────┘
+📊 Summary: 4 channels found
 ```
 
 ### List Versions
@@ -249,63 +251,16 @@ Show all available versions/bundles for operators:
 ```
 🔢 OpenShift Operator Versions (redhat-operator-4.20)
 ==================================================
-┌─────────────────────────────────────────────────────────┬───────────────────────────────────────────────┐
-│ Package Name                                            │ Version/Bundle                                │
-├─────────────────────────────────────────────────────────┼───────────────────────────────────────────────┤
-│ ptp-operator                                            │ ptp-operator.v4.20.0-202501230001             │
-│ ptp-operator                                            │ ptp-operator.v4.20.0-202502250302             │
-│ ptp-operator                                            │ ptp-operator.v4.20.0-202503121135             │
-│ ptp-operator                                            │ ptp-operator.v4.20.0-202503211332             │
-│ ptp-operator                                            │ ptp-operator.v4.20.0-202504021503             │
-└─────────────────────────────────────────────────────────┴───────────────────────────────────────────────┘
-📊 Summary: 5 versions found
+┌──────────────┬────────────┬───────────────────────────────────┐
+│ Package Name │ Channel(s) │ Version/Bundle                    │
+├──────────────┼────────────┼───────────────────────────────────┤
+│ ptp-operator │ stable     │ ptp-operator.v4.20.0-202603160950 │
+│ ptp-operator │ stable     │ ptp-operator.v4.20.0-202603030647 │
+└──────────────┴────────────┴───────────────────────────────────┘
+📊 Summary: 2 versions found
 ```
 
-**SHA256 Digest Example:**
-```bash
-# Using SHA256 digest shows different header format
-./oc-catalog.sh -v sha256:6462dd0a33055240e169044356899aaa76696fe8e58a51c95b42f0012ba6a1f7 versions ptp-operator
-```
-
-**Output:**
-```
-🔢 OpenShift Operator Versions (redhat-operator@sha256:6462dd0a...)
-==================================================
-┌─────────────────────────────────────────────────────────┬───────────────────────────────────────────────┐
-│ Package Name                                            │ Version/Bundle                                │
-├─────────────────────────────────────────────────────────┼───────────────────────────────────────────────┤
-│ ptp-operator                                            │ ptp-operator.v4.14.0-202310201027             │
-│ ptp-operator                                            │ ptp-operator.v4.14.0-202311021650             │
-│ ptp-operator                                            │ ptp-operator.v4.14.0-202311092032             │
-│ ptp-operator                                            │ ptp-operator.v4.14.0-202311211133             │
-│ ptp-operator                                            │ ptp-operator.v4.14.0-202312052033             │
-└─────────────────────────────────────────────────────────┴───────────────────────────────────────────────┘
-📊 Summary: 31 versions found
-```
-
-**Certified Operator Example:**
-```bash
-# List versions for certified operator
-./oc-catalog.sh -c certified-operator versions sriov-fec
-```
-
-**Output:**
-```
-🔢 OpenShift Operator Versions (certified-operator-4.20)
-==================================================
-┌─────────────────────────────────────────────────────────┬───────────────────────────────────────────────┐
-│ Package Name                                            │ Version/Bundle                                │
-├─────────────────────────────────────────────────────────┼───────────────────────────────────────────────┤
-│ sriov-fec                                               │ sriov-fec.v2.10.0                             │
-│ sriov-fec                                               │ sriov-fec.v2.11.0                             │
-│ sriov-fec                                               │ sriov-fec.v2.11.1                             │
-│ sriov-fec                                               │ sriov-fec.v2.7.1                              │
-│ sriov-fec                                               │ sriov-fec.v2.7.2                              │
-│ sriov-fec                                               │ sriov-fec.v2.8.0                              │
-│ sriov-fec                                               │ sriov-fec.v2.9.0                              │
-└─────────────────────────────────────────────────────────┴───────────────────────────────────────────────┘
-📊 Summary: 7 versions found
-```
+Note: Column widths are dynamically calculated based on the actual data in each result set. Channel(s) column is capped at 45 characters; longer values are truncated with "...".
 
 ### List Hub Operator Versions
 Show available versions for common hub operators:
@@ -321,34 +276,25 @@ Show available versions for common hub operators:
 ./oc-catalog.sh -v sha256:6462dd0a33055240e169044356899aaa76696fe8e58a51c95b42f0012ba6a1f7 hub
 ```
 
-**Output:**
+**Output (with `-l 1`):**
 ```
 🔢 OpenShift Operator Versions (redhat-operator-4.20)
 ==================================================
-┌─────────────────────────────────────────────────────────┬───────────────────────────────────────────────┐
-│ Package Name                                            │ Version/Bundle                                │
-├─────────────────────────────────────────────────────────┼───────────────────────────────────────────────┤
-│ odf-operator                                            │ odf-operator.v4.20.0-202501230001             │
-│ openshift-gitops-operator                               │ openshift-gitops-operator.v1.15.1             │
-│ topology-aware-lifecycle-manager                        │ topology-aware-lifecycle-manager.v4.20.0      │
-│ local-storage-operator                                  │ local-storage-operator.v4.20.0-202501230001   │
-│ cluster-logging                                         │ cluster-logging.v6.3.0-202501230001           │
-│ amq-streams                                             │ amq-streams.v2.9.0-0                          │
-│ amq-streams-console                                     │ amq-streams-console.v0.1.0                    │
-│ advanced-cluster-management                             │ advanced-cluster-management.v2.12.0            │
-└─────────────────────────────────────────────────────────┴───────────────────────────────────────────────┘
-📊 Summary: 8 versions found
+┌──────────────────────────────────┬──────────────────────────────────────────┬─────────────────────────────────────────────┐
+│ Package Name                     │ Channel(s)                               │ Version/Bundle                              │
+├──────────────────────────────────┼──────────────────────────────────────────┼─────────────────────────────────────────────┤
+│ advanced-cluster-management      │ release-2.16                             │ advanced-cluster-management.v2.16.0         │
+│ amq-streams                      │ amq-streams-3.1.x,amq-streams-3.x,stable │ amqstreams.v3.1.0-14                        │
+│ amq-streams-console              │ amq-streams-3.1.x,amq-streams-3.x,stable │ amq-streams-console.v3.1.0-10               │
+│ cluster-logging                  │ stable-6.5                               │ cluster-logging.v6.5.0                      │
+│ local-storage-operator           │ stable                                   │ local-storage-operator.v4.20.0-202603030647 │
+│ multicluster-engine              │ stable-2.11                              │ multicluster-engine.v2.11.0                 │
+│ odf-operator                     │ stable-4.20                              │ odf-operator.v4.20.9-rhodf                  │
+│ openshift-gitops-operator        │ gitops-1.20,latest                       │ openshift-gitops-operator.v1.20.1           │
+│ topology-aware-lifecycle-manager │ 4.20,stable                              │ topology-aware-lifecycle-manager.v4.20.1    │
+└──────────────────────────────────┴──────────────────────────────────────────┴─────────────────────────────────────────────┘
+📊 Summary: 9 versions found
 ```
-
-**Hub Operators Included:**
-- `odf-operator` - OpenShift Data Foundation
-- `openshift-gitops-operator` - OpenShift GitOps (ArgoCD)
-- `topology-aware-lifecycle-manager` - Topology Aware Lifecycle Manager
-- `local-storage-operator` - Local Storage Operator
-- `cluster-logging` - Cluster Logging
-- `amq-streams` - AMQ Streams (Kafka)
-- `amq-streams-console` - AMQ Streams Console
-- `advanced-cluster-management` - Advanced Cluster Management
 
 ### List CloudRAN Operator Versions
 Show available versions for common CloudRAN operators:
@@ -364,30 +310,23 @@ Show available versions for common CloudRAN operators:
 ./oc-catalog.sh -v sha256:6462dd0a33055240e169044356899aaa76696fe8e58a51c95b42f0012ba6a1f7 cloudran
 ```
 
-**Output:**
+**Output (with `-l 1`):**
 ```
 🔢 OpenShift Operator Versions (redhat-operator-4.20)
 ==================================================
-┌─────────────────────────────────────────────────────────┬───────────────────────────────────────────────┐
-│ Package Name                                            │ Version/Bundle                                │
-├─────────────────────────────────────────────────────────┼───────────────────────────────────────────────┤
-│ ptp-operator                                            │ ptp-operator.v4.20.0-202501230001             │
-│ sriov-network-operator                                  │ sriov-network-operator.v4.20.0-202501230001   │
-│ local-storage-operator                                  │ local-storage-operator.v4.20.0-202501230001   │
-│ cluster-logging                                         │ cluster-logging.v6.3.0-202501230001           │
-│ lifecycle-agent                                         │ lifecycle-agent.v4.20.0-202501230001          │
-│ redhat-oadp-operator                                    │ redhat-oadp-operator.v1.5.0                   │
-└─────────────────────────────────────────────────────────┴───────────────────────────────────────────────┘
-📊 Summary: 6 versions found
+┌────────────────────────┬─────────────┬─────────────────────────────────────────────┐
+│ Package Name           │ Channel(s)  │ Version/Bundle                              │
+├────────────────────────┼─────────────┼─────────────────────────────────────────────┤
+│ cluster-logging        │ stable-6.5  │ cluster-logging.v6.5.0                      │
+│ lifecycle-agent        │ 4.20,stable │ lifecycle-agent.v4.20.2                     │
+│ local-storage-operator │ stable      │ local-storage-operator.v4.20.0-202603030647 │
+│ lvms-operator          │ stable-4.20 │ lvms-operator.v4.20.0                       │
+│ ptp-operator           │ stable      │ ptp-operator.v4.20.0-202603160950           │
+│ redhat-oadp-operator   │ stable      │ oadp-operator.v1.5.5                        │
+│ sriov-network-operator │ stable      │ sriov-network-operator.v4.20.0-202602261925 │
+└────────────────────────┴─────────────┴─────────────────────────────────────────────┘
+📊 Summary: 7 versions found
 ```
-
-**CloudRAN Operators Included:**
-- `ptp-operator` - Precision Time Protocol Operator
-- `sriov-network-operator` - SR-IOV Network Operator
-- `local-storage-operator` - Local Storage Operator
-- `cluster-logging` - Cluster Logging
-- `lifecycle-agent` - Lifecycle Agent
-- `redhat-oadp-operator` - OADP (OpenShift API for Data Protection) Operator
 
 **Custom Index Image Example:**
 ```bash
@@ -485,6 +424,10 @@ Options:
   -c <catalog>   Catalog name (default: redhat-operator)
   -i <image>     Custom catalog index image (overrides -v and -c)
                    Example: registry.example.com/my-catalog:latest
+  -l <limit>     Limit number of results (default: no limit)
+                   For packages/channels: limits total results
+                   For versions/hub/cloudran: limits versions per package
+                   Example: -l 5 versions shows 5 versions per package
   -h             Show this help message
 
 Commands:
@@ -504,6 +447,7 @@ Examples:
   ./oc-catalog.sh -v sha256:78c4590eaa7a... packages       # Use SHA256 digest
   ./oc-catalog.sh -c certified-operator packages           # Different catalog
   ./oc-catalog.sh -i registry.example.com/my-catalog:v1.0 packages # Custom index
+  ./oc-catalog.sh -l 5 versions ptp-operator               # Show 5 versions for ptp-operator
   ./oc-catalog.sh -v 4.20 -c redhat-operator packages ptp-operator cluster-logging
   ./oc-catalog.sh -c certified-operator packages sriov-fec # Certified operator
   ./oc-catalog.sh hub                                       # List all hub operator versions

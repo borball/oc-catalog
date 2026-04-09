@@ -68,36 +68,120 @@ print_header() {
     printf "${BOLD}%s${NC}\n" "$(printf '=%.0s' {1..50})"
 }
 
-print_table_header() {
-    local col1="$1"
-    local col2="$2"
-    local width1="${3:-25}"
-    local width2="${4:-20}"
-    
-    echo -e "${BOLD}┌$(printf '─%.0s' $(seq 1 $((width1+2))))┬$(printf '─%.0s' $(seq 1 $((width2+2))))┐${NC}"
-    printf "${BOLD}│ %-${width1}s │ %-${width2}s │${NC}\n" "$col1" "$col2"
-    echo -e "${BOLD}├$(printf '─%.0s' $(seq 1 $((width1+2))))┼$(printf '─%.0s' $(seq 1 $((width2+2))))┤${NC}"
-}
+# Renders a dynamic-width table from TSV data on stdin
+# Usage: command_producing_tsv | render_table "Header1" "Header2" ...
+# Sets global _table_row_count with number of data rows rendered
+render_table() {
+    local headers=("$@")
+    local ncols=${#headers[@]}
+    local colors
+    colors[0]="$GREEN"
+    colors[1]="$YELLOW"
+    colors[2]="$CYAN"
 
-print_table_row() {
-    local col1="$1"
-    local col2="$2"
-    local width1="${3:-25}"
-    local width2="${4:-20}"
-    
-    printf "│ ${GREEN}%-${width1}s${NC} │ ${YELLOW}%-${width2}s${NC} │\n" "$col1" "$col2"
-}
+    # Buffer all rows
+    local rows=()
+    local line
+    while IFS= read -r line; do
+        [ -n "$line" ] && rows+=("$line")
+    done
 
-print_table_footer() {
-    local width1="${1:-25}"
-    local width2="${2:-20}"
-    echo -e "${BOLD}└$(printf '─%.0s' $(seq 1 $((width1+2))))┴$(printf '─%.0s' $(seq 1 $((width2+2))))┘${NC}"
+    # Calculate column widths (min = header length, middle columns capped at 45)
+    local widths=()
+    local i
+    local last_col=$((ncols - 1))
+    for ((i=0; i<ncols; i++)); do
+        widths[$i]=${#headers[$i]}
+    done
+    local cols
+    for line in "${rows[@]}"; do
+        IFS=$'\t' read -ra cols <<< "$line"
+        for ((i=0; i<ncols; i++)); do
+            (( ${#cols[$i]} > widths[$i] )) && widths[$i]=${#cols[$i]}
+        done
+    done
+    # Cap middle columns (Channel(s)) at max width of 45
+    for ((i=1; i<last_col; i++)); do
+        (( widths[i] > 45 )) && widths[$i]=45
+    done
+
+    # Build borders and header
+    local top="┌" mid="├" bot="└" hdr="│"
+    for ((i=0; i<ncols; i++)); do
+        local w=${widths[$i]}
+        local bar=$(printf '─%.0s' $(seq 1 $((w+2))))
+        top+="$bar"; mid+="$bar"; bot+="$bar"
+        hdr+="$(printf " %-${w}s │" "${headers[$i]}")"
+        if ((i < ncols-1)); then
+            top+="┬"; mid+="┼"; bot+="┴"
+        fi
+    done
+    top+="┐"; mid+="┤"; bot+="┘"
+
+    echo -e "${BOLD}${top}${NC}"
+    echo -e "${BOLD}${hdr}${NC}"
+    echo -e "${BOLD}${mid}${NC}"
+
+    # Render data rows (truncate middle columns if exceeding max width)
+    for line in "${rows[@]}"; do
+        IFS=$'\t' read -ra cols <<< "$line"
+        local dr="│"
+        for ((i=0; i<ncols; i++)); do
+            local w=${widths[$i]}
+            local val="${cols[$i]}"
+            if (( i > 0 && i < last_col && ${#val} > w )); then
+                val="${val:0:$((w-3))}..."
+            fi
+            dr+=" ${colors[$i]}$(printf "%-${w}s" "$val")${NC} │"
+        done
+        echo -e "$dr"
+    done
+
+    echo -e "${BOLD}${bot}${NC}"
+
+    # Write row count to fd 3 if open, otherwise to a temp file
+    _table_row_count=${#rows[@]}
 }
 
 print_summary() {
     local count="$1"
     local type="$2"
     echo -e "${BLUE}📊 Summary: ${BOLD}${count}${NC} ${BLUE}${type} found${NC}"
+}
+
+# Build a jq filter clause for matching multiple package names
+# Usage: _build_pkg_filter <field> [pkg1 pkg2 ...]
+# Returns: ' and (.name=="pkg1" or .name=="pkg2")' or empty string if no packages
+_build_pkg_filter() {
+    local field="$1"
+    shift
+    local pkgs=("$@")
+    if [ ${#pkgs[@]} -eq 0 ]; then
+        echo ""
+        return
+    fi
+    local filter=""
+    for pkg in "${pkgs[@]}"; do
+        [ -n "$filter" ] && filter+=" or "
+        filter+="${field}==\"${pkg}\""
+    done
+    echo " and (${filter})"
+}
+
+# Resolve display name and json file path based on options
+_resolve_paths() {
+    if [ -n "$index_image" ]; then
+        _display_name="custom-index: $(echo "$index_image" | sed 's/.*\///' | cut -c1-40)..."
+        local safe_name=$(echo "$index_image" | sed 's/[:/]/-/g' | sed 's/@/-/g')
+        _json_file="/tmp/custom-index-${safe_name}.json"
+    elif [[ "$version" == sha256:* ]]; then
+        _display_name="${catalog}@${version:0:19}..."
+        local cache_suffix=$(echo "$version" | sed 's/[:/]/-/g')
+        _json_file="/tmp/${catalog}-${cache_suffix}.json"
+    else
+        _display_name="${catalog}-${version}"
+        _json_file="/tmp/${catalog}-${version}.json"
+    fi
 }
 
 _init() {
@@ -147,8 +231,15 @@ _init() {
     fi
     
     if [ -f "$json_file" ]; then
-        #if modified more than 120 minutes ago, re-render
-        if [ $(stat -c %Y "$json_file") -lt $(date -d "1200 minutes ago" +%s) ]; then
+        #if modified more than 1200 minutes ago, re-render
+        if [[ "$(uname)" == "Darwin" ]]; then
+            file_mtime=$(stat -f %m "$json_file")
+            threshold=$(date -v-1200M +%s)
+        else
+            file_mtime=$(stat -c %Y "$json_file")
+            threshold=$(date -d "1200 minutes ago" +%s)
+        fi
+        if [ "$file_mtime" -lt "$threshold" ]; then
             echo -e "${BLUE}Refreshing catalog data...${NC}" >&2
             if ! opm render $_index > "$json_file" 2>/dev/null; then
                 echo -e "${RED}Error: Failed to refresh catalog data from $_index${NC}" >&2
@@ -176,165 +267,91 @@ _init() {
 }
 
 packages() {
-    # Determine display name and json file path
-    if [ -n "$index_image" ]; then
-        local display_name="custom-index: $(echo "$index_image" | sed 's/.*\///' | cut -c1-40)..."
-        local safe_name=$(echo "$index_image" | sed 's/[:/]/-/g' | sed 's/@/-/g')
-        local json_file="/tmp/custom-index-${safe_name}.json"
-    elif [[ "$version" == sha256:* ]]; then
-        local display_name="${catalog}@${version:0:19}..."
-        local cache_suffix=$(echo "$version" | sed 's/[:/]/-/g')
-        local json_file="/tmp/${catalog}-${cache_suffix}.json"
+    _resolve_paths
+    print_header "OpenShift Operator Packages (${_display_name})" "📦"
+
+    local pkg_filter=$(_build_pkg_filter ".name" "${packages[@]}")
+    local data
+    data=$(jq -cr 'select(.schema=="olm.package"'"$pkg_filter"')|[.name,.defaultChannel]|@tsv' "$_json_file")
+
+    if [ -n "$limit" ]; then
+        render_table "Package Name" "Default Channel" < <(echo "$data" | head -n "$limit")
     else
-        local display_name="${catalog}-${version}"
-        local json_file="/tmp/${catalog}-${version}.json"
+        render_table "Package Name" "Default Channel" <<< "$data"
     fi
-    
-    print_header "OpenShift Operator Packages (${display_name})" "📦"
-    print_table_header "Package Name" "Default Channel" 55 30
-    
-    local count=0
-    
-    if [ ${#packages[@]} -eq 0 ]; then
-        if [ -n "$limit" ]; then
-            while IFS=$'\t' read -r name channel; do
-                print_table_row "$name" "$channel" 55 30
-                ((count++))
-            done < <(cat "$json_file" | jq -cr '(.|select(.schema=="olm.package")|[.name,.defaultChannel])|@tsv' | head -n "$limit")
-        else
-            while IFS=$'\t' read -r name channel; do
-                print_table_row "$name" "$channel" 55 30
-                ((count++))
-            done < <(cat "$json_file" | jq -cr '(.|select(.schema=="olm.package")|[.name,.defaultChannel])|@tsv')
-        fi
-    else
-        for package in ${packages[@]}; do
-            if [ -n "$limit" ]; then
-                while IFS=$'\t' read -r name channel; do
-                    print_table_row "$name" "$channel" 55 30
-                    ((count++))
-                done < <(cat "$json_file" | jq -cr '(.|select(.schema=="olm.package" and .name=="'$package'")|[.name,.defaultChannel])|@tsv' | head -n "$limit")
-            else
-                while IFS=$'\t' read -r name channel; do
-                    print_table_row "$name" "$channel" 55 30
-                    ((count++))
-                done < <(cat "$json_file" | jq -cr '(.|select(.schema=="olm.package" and .name=="'$package'")|[.name,.defaultChannel])|@tsv')
-            fi
-        done
-    fi
-    
-    print_table_footer 55 30
-    print_summary "$count" "packages"
+    print_summary "$_table_row_count" "packages"
     echo
 }
 
 channels() {
-    # Determine display name and json file path
-    if [ -n "$index_image" ]; then
-        local display_name="custom-index: $(echo "$index_image" | sed 's/.*\///' | cut -c1-40)..."
-        local safe_name=$(echo "$index_image" | sed 's/[:/]/-/g' | sed 's/@/-/g')
-        local json_file="/tmp/custom-index-${safe_name}.json"
-    elif [[ "$version" == sha256:* ]]; then
-        local display_name="${catalog}@${version:0:19}..."
-        local cache_suffix=$(echo "$version" | sed 's/[:/]/-/g')
-        local json_file="/tmp/${catalog}-${cache_suffix}.json"
+    _resolve_paths
+    print_header "OpenShift Operator Channels (${_display_name})" "📺"
+
+    local pkg_filter=$(_build_pkg_filter ".package" "${packages[@]}")
+    local data
+    data=$(jq -cr 'select(.schema=="olm.channel"'"$pkg_filter"')|[.package,.name]|@tsv' "$_json_file")
+
+    if [ -n "$limit" ]; then
+        render_table "Package Name" "Channel" < <(echo "$data" | head -n "$limit")
     else
-        local display_name="${catalog}-${version}"
-        local json_file="/tmp/${catalog}-${version}.json"
+        render_table "Package Name" "Channel" <<< "$data"
     fi
-    
-    print_header "OpenShift Operator Channels (${display_name})" "📺"
-    print_table_header "Package Name" "Channel" 55 35
-    
-    local count=0
-    
-    if [ ${#packages[@]} -eq 0 ]; then
-        if [ -n "$limit" ]; then
-            while IFS=$'\t' read -r package channel; do
-                print_table_row "$package" "$channel" 55 35
-                ((count++))
-            done < <(cat "$json_file" | jq -cr '(.|select(.schema=="olm.channel")|[.package,.name])|@tsv' | head -n "$limit")
-        else
-            while IFS=$'\t' read -r package channel; do
-                print_table_row "$package" "$channel" 55 35
-                ((count++))
-            done < <(cat "$json_file" | jq -cr '(.|select(.schema=="olm.channel")|[.package,.name])|@tsv')
-        fi
-    else
-        for package in ${packages[@]}; do
-            if [ -n "$limit" ]; then
-                while IFS=$'\t' read -r pkg channel; do
-                    print_table_row "$pkg" "$channel" 55 35
-                    ((count++))
-                done < <(cat "$json_file" | jq -cr '(.|select(.schema=="olm.channel" and .package=="'$package'")|[.package,.name])|@tsv' | head -n "$limit")
-            else
-                while IFS=$'\t' read -r pkg channel; do
-                    print_table_row "$pkg" "$channel" 55 35
-                    ((count++))
-                done < <(cat "$json_file" | jq -cr '(.|select(.schema=="olm.channel" and .package=="'$package'")|[.package,.name])|@tsv')
-            fi
-        done
-    fi
-    
-    print_table_footer 55 35
-    print_summary "$count" "channels"
+    print_summary "$_table_row_count" "channels"
     echo
 }
 
+# Helper: output TSV "package\tchannels\tbundle" by joining olm.channel + olm.bundle
+# Usage: _versions_with_channels <json_file> [packages...]
+_versions_with_channels() {
+    local _jf="$1"
+    shift
+    local _filter=$(_build_pkg_filter ".package" "$@")
+
+    {
+        jq -cr 'select(.schema=="olm.channel"'"$_filter"') | .package as $p | .name as $c | .entries[] | "C\t" + $p + "/" + .name + "\t" + $c' "$_jf"
+        jq -cr 'select(.schema=="olm.bundle"'"$_filter"') | "B\t" + .package + "/" + .name + "\t" + .package + "\t" + .name' "$_jf"
+    } | awk -F'\t' '
+        $1=="C" { if (ch[$2]) ch[$2]=ch[$2]","$3; else ch[$2]=$3 }
+        $1=="B" { print $3 "\t" ch[$2] "\t" $4 }
+    '
+}
+
+# Helper: output TSV "package\tversion\tchannels\tbundle" for sort+limit use
+# Usage: _versions_with_channels_sortable <json_file> [packages...]
+_versions_with_channels_sortable() {
+    local _jf="$1"
+    shift
+    local _filter=$(_build_pkg_filter ".package" "$@")
+
+    {
+        jq -cr 'select(.schema=="olm.channel"'"$_filter"') | .name as $c | .entries[] | "C\t" + .name + "\t" + $c' "$_jf"
+        jq -cr 'select(.schema=="olm.bundle"'"$_filter"') | "B\t" + .name + "\t" + .package + "\t" + ((.properties // [] | map(select(.type=="olm.package") | .value.version) | .[0]) // (.name | sub("^.*\\.v"; "") | sub("-.*$"; ""))) + "\t" + .name' "$_jf"
+    } | awk -F'\t' '
+        $1=="C" { if (ch[$2]) ch[$2]=ch[$2]","$3; else ch[$2]=$3 }
+        $1=="B" { print $3 "\t" $4 "\t" ch[$2] "\t" $5 }
+    '
+}
+
 versions() {
-    # Determine display name and json file path
-    if [ -n "$index_image" ]; then
-        local display_name="custom-index: $(echo "$index_image" | sed 's/.*\///' | cut -c1-40)..."
-        local safe_name=$(echo "$index_image" | sed 's/[:/]/-/g' | sed 's/@/-/g')
-        local json_file="/tmp/custom-index-${safe_name}.json"
-    elif [[ "$version" == sha256:* ]]; then
-        local display_name="${catalog}@${version:0:19}..."
-        local cache_suffix=$(echo "$version" | sed 's/[:/]/-/g')
-        local json_file="/tmp/${catalog}-${cache_suffix}.json"
-    else
-        local display_name="${catalog}-${version}"
-        local json_file="/tmp/${catalog}-${version}.json"
-    fi
-    
-    print_header "OpenShift Operator Versions (${display_name})" "🔢"
-    print_table_header "Package Name" "Version/Bundle" 55 45
-    
-    local count=0
-    
-    if [ ${#packages[@]} -eq 0 ]; then
-        if [ -n "$limit" ]; then
-            # Get all unique packages first, then limit last N versions per package (most recent)
-            local all_packages=($(cat "$json_file" | jq -cr '.|select(.schema=="olm.bundle")|.package' | sort -u))
-            for pkg in "${all_packages[@]}"; do
-                while IFS=$'\t' read -r package version name; do
-                    print_table_row "$package" "$name" 55 45
-                    ((count++))
-                done < <(cat "$json_file" | jq -cr 'select(.schema=="olm.bundle" and .package=="'$pkg'") | [ .package, ((.properties // [] | map(select(.type=="olm.package") | .value.version) | .[0]) // (.name | sub("^.*\\.v"; "") | sub("-.*$"; ""))), .name ] | @tsv' | sort -t $'\t' -k2,2Vr | head -n "$limit")
-            done
-        else
-            while IFS=$'\t' read -r package ver; do
-                print_table_row "$package" "$ver" 55 45
-                ((count++))
-            done < <(cat "$json_file" | jq -cr '(.|select(.schema=="olm.bundle")|[.package,.name])|@tsv')
+    _resolve_paths
+    print_header "OpenShift Operator Versions (${_display_name})" "🔢"
+
+    local data=""
+    if [ -n "$limit" ]; then
+        # With limit: get sortable data in single pass, then per-package top-N via awk
+        local sort_pkgs=("${packages[@]}")
+        if [ ${#sort_pkgs[@]} -eq 0 ]; then
+            sort_pkgs=($(jq -cr 'select(.schema=="olm.bundle")|.package' "$_json_file" | sort -u))
         fi
+        data=$(_versions_with_channels_sortable "$_json_file" "${sort_pkgs[@]}" \
+            | sort -t $'\t' -k1,1 -k2,2Vr \
+            | awk -F'\t' -v lim="$limit" '{ if (count[$1]++ < lim) print $1 "\t" $3 "\t" $4 }')
     else
-        for package in ${packages[@]}; do
-            if [ -n "$limit" ]; then
-                while IFS=$'\t' read -r pkg version name; do
-                    print_table_row "$pkg" "$name" 55 45
-                    ((count++))
-                done < <(cat "$json_file" | jq -cr 'select(.schema=="olm.bundle" and .package=="'$package'") | [ .package, ((.properties // [] | map(select(.type=="olm.package") | .value.version) | .[0]) // (.name | sub("^.*\\.v"; "") | sub("-.*$"; ""))), .name ] | @tsv' | sort -t $'\t' -k2,2Vr | head -n "$limit")
-            else
-                while IFS=$'\t' read -r pkg ver; do
-                    print_table_row "$pkg" "$ver" 55 45
-                    ((count++))
-                done < <(cat "$json_file" | jq -cr '(.|select(.schema=="olm.bundle" and .package=="'$package'")|[.package,.name])|@tsv')
-            fi
-        done
+        data=$(_versions_with_channels "$_json_file" "${packages[@]}")
     fi
-    
-    print_table_footer 55 45
-    print_summary "$count" "versions"
+
+    render_table "Package Name" "Channel(s)" "Version/Bundle" <<< "$data"
+    print_summary "$_table_row_count" "versions"
     echo
 }
 
