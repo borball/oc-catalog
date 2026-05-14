@@ -230,6 +230,27 @@ _init() {
         fi
     fi
     
+    # Check for registry credentials before attempting to pull
+    local auth_found=0
+    for auth_file in \
+        "${DOCKER_CONFIG:-$HOME/.docker}/config.json" \
+        "${XDG_RUNTIME_DIR}/containers/auth.json" \
+        "$HOME/.config/containers/auth.json"; do
+        if [ -f "$auth_file" ]; then
+            auth_found=1
+            break
+        fi
+    done
+    if [ $auth_found -eq 0 ]; then
+        echo -e "${RED}Error: No container registry credentials found${NC}" >&2
+        echo -e "${RED}Please configure a pull secret in one of:${NC}" >&2
+        echo -e "${RED}  - \$DOCKER_CONFIG/config.json (or ~/.docker/config.json)${NC}" >&2
+        echo -e "${RED}  - \$XDG_RUNTIME_DIR/containers/auth.json${NC}" >&2
+        echo -e "${RED}  - ~/.config/containers/auth.json${NC}" >&2
+        echo -e "${RED}Download your pull secret from: https://console.redhat.com/openshift/install/pull-secret${NC}" >&2
+        exit 1
+    fi
+
     if [ -f "$json_file" ]; then
         #if modified more than 1200 minutes ago, re-render
         if [[ "$(uname)" == "Darwin" ]]; then
